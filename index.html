@@ -1,16 +1,553 @@
-. Aprende más sobre el estudio de las Escrituras
-Las Escrituras tienen poder espiritual. Testifican de Jesucristo, nos dan esperanza y muestran el camino hacia nuestro Padre Celestial. Las Escrituras son libros sagrados que contienen la palabra de Dios, comunicada por medio de Sus profetas. Muestran cómo Dios ha bendecido, advertido y guiado a Sus hijos a lo largo de la historia.
 
-Estas son algunas preguntas y actividades de aprendizaje que podrías probar:
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adri v4.0 · Stack Labs</title>
+    <!-- Tesseract.js para OCR -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <!-- FlexSearch para búsqueda instantánea -->
+    <script src="https://cdn.jsdelivr.net/npm/flexsearch@0.7.31/dist/flexsearch.bundle.min.js"></script>
+    <!-- LocalForage para almacenar los textos completos -->
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --text-dim: #94a3b8;
+            --accent: #38bdf8; --accent-dark: #0ea5e9; --danger: #ef4444; --success: #22c55e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text);
+            padding: 16px; min-height: 100vh; display: flex; flex-direction: column;
+        }
+        .container { max-width: 1000px; margin: 0 auto; width: 100%; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+        
+        /* Visualizador */
+        #visualizer { width: 100%; height: 120px; background: #000; border-radius: 12px; border: 1px solid #334155; }
 
-¿Por qué nos ha dado el Padre Celestial las Escrituras?
+        /* Área de texto */
+        .text-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 250px; }
+        textarea {
+            width: 100%; flex: 1; min-height: 250px; padding: 16px; border-radius: 12px;
+            border: 1px solid #334155; background: var(--card); color: var(--text);
+            font-size: 1rem; line-height: 1.6; resize: vertical; outline: none; font-family: 'Courier New', monospace;
+        }
+        textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(56,189,248,0.2); }
 
-Lee 1 Nefi 6:4–6, donde Nefi explica el propósito de sus escritos. Las Escrituras pueden convertirse en amigos de confianza. Siempre están disponibles cuando los necesitas. Aprender, meditar, escudriñar y memorizar pasajes de las Escrituras es como llenar tu vida de amigos, valores y verdades a los que puedes recurrir en cualquier momento, en cualquier parte del mundo. Las Escrituras brindan paz, esperanza y restauran la confianza. Comparte un versículo favorito que te haya ayudado a acercarte más a Jesucristo.
+        /* Barra de búsqueda */
+        .search-bar { display: flex; gap: 8px; margin-top: 4px; }
+        .search-bar input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: var(--card); color: var(--text); font-size: 0.95rem; }
+        .search-results { max-height: 180px; overflow-y: auto; background: var(--card); border-radius: 8px; border: 1px solid #334155; margin-top: 4px; display: none; }
+        .search-results.active { display: block; }
+        .search-results div { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+        .search-results div:hover { background: #334155; }
 
-¿Cómo puedes aferrarte a la palabra de Dios?
+        /* Toolbar */
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; padding: 10px 0; border-top: 1px solid #334155; }
+        .group { display: flex; gap: 6px; align-items: center; background: var(--card); padding: 6px 10px; border-radius: 8px; border: 1px solid #334155; flex-wrap: wrap; }
+        button, select, input[type="range"] {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid #475569; background: var(--card);
+            color: var(--text); cursor: pointer; font-size: 0.85rem; transition: 0.2s;
+        }
+        button:hover { background: #334155; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+        button.primary:hover { background: var(--accent-dark); }
+        button.recording { background: var(--danger); color: white; animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); } 50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); } }
 
-Lehi y Nefi tuvieron una visión en la que una barra de hierro representaba la palabra de Dios. Repasa 1 Nefi 8:19–25, 30–34; 11:25, y observa la forma en que diferentes personas usaron (o no usaron) la barra de hierro. ¿Qué aprendes sobre las Escrituras gracias a este símbolo? ¿Qué significa para ti “asi[rte] constantemente” a la palabra de Dios en tu vida?
+        /* Fullscreen overlay */
+        .fullscreen-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 999; display: none; flex-direction: column; padding: 20px; }
+        .fullscreen-overlay.active { display: flex; }
+        .fullscreen-overlay textarea { flex: 1; font-size: 1.4rem; line-height: 1.8; background: #000; border-color: var(--accent); }
 
-¿Cómo puedes encontrar más luz?
+        .status { font-size: 0.85rem; text-align: center; padding: 8px; border-radius: 6px; display: none; }
+        .status.active { display: block; background: #1e293b; color: var(--accent); }
 
-En estos pasajes, busca palabras y frases que describan cómo debemos leer las Escrituras y cómo somos bendecidos cuando lo hacemos: Josué 1:8; Salmo 119:105; 2 Timoteo 3:15–17; 1 Nefi 15:24; 2 Nefi 32:3; Helamán 3:29–30. Elabora una lista de lo que descubras.
+        @media (max-width: 600px) {
+            .header { flex-direction: column; align-items: stretch; }
+            .toolbar .group { flex: 1 1 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo">🎙️ Adri v4.0</div>
+        <div style="display:flex; gap:8px;">
+            <button id="btnFullscreen" onclick="toggleFullscreen()">⛶ Pantalla Completa</button>
+        </div>
+    </div>
+
+    <!-- Visualizador de audio real -->
+    <canvas id="visualizer"></canvas>
+
+    <!-- Área de texto principal -->
+    <div class="text-wrapper">
+        <textarea id="texto" placeholder="Pega, escribe, dicta o escanea un texto..."></textarea>
+    </div>
+
+    <!-- Búsqueda de documentos guardados -->
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar documento guardado (ej. Libro de Mormón Daniel 1)..." oninput="buscar(this.value)">
+        <button onclick="guardarDocumento()" title="Guardar texto actual con título">💾 Guardar</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+
+    <!-- Barra de herramientas -->
+    <div class="toolbar">
+        <div class="group">
+            <button id="btnPlay" class="primary" onclick="reproducir()">▶️ Leer</button>
+            <button id="btnPause" onclick="pausar()" disabled>⏸️</button>
+            <button id="btnStop" onclick="detener()" disabled>⏹️</button>
+        </div>
+        <div class="group">
+            <label>Velocidad: <span id="velLabel">1.0x</span></label>
+            <input type="range" id="velocidad" min="0.5" max="2.5" step="0.1" value="1" oninput="cambiarVelocidad(this.value)" style="width:70px;">
+        </div>
+        <div class="group">
+            <button id="btnGrabar" onclick="toggleGrabacion()">🎙️ Grabar</button>
+        </div>
+        <div class="group">
+            <label>Motor:</label>
+            <select id="motorVoz" onchange="cambiarMotor(this.value)">
+                <option value="browser">Navegador (rápido)</option>
+                <option value="kokoro">Kokoro IA (calidad)</option>
+            </select>
+            <select id="vozSelect" onchange="seleccionarVoz(this.value)" style="max-width:150px;"></select>
+        </div>
+        <div class="group">
+            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="procesarOCR(this)">
+            <button onclick="document.getElementById('fileInput').click()">📷 OCR</button>
+        </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <!-- Overlay pantalla completa -->
+    <div class="fullscreen-overlay" id="fsOverlay">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <h2 style="color:var(--accent);">Modo Lectura</h2>
+            <button onclick="toggleFullscreen()">✕ Cerrar</button>
+        </div>
+        <textarea id="textoFS" readonly></textarea>
+    </div>
+</div>
+
+<script type="module">
+    // ═══════════════════════════════════════════════════════════
+    // 0. IMPORTACIONES DINÁMICAS (para VAD y Kokoro)
+    // ═══════════════════════════════════════════════════════════
+    let createVAD, KokoroTTS, audioToWav;
+    try {
+        const vadModule = await import('https://cdn.jsdelivr.net/npm/@aid-on/vad@0.1.3/+esm');
+        createVAD = vadModule.createVAD;
+        audioToWav = vadModule.audioToWav;
+        console.log("VAD cargado");
+    } catch(e) { console.warn("VAD no disponible:", e); }
+
+    // ═══════════════════════════════════════════════════════════
+    // 1. ESTADO GLOBAL
+    // ═══════════════════════════════════════════════════════════
+    const synth = window.speechSynthesis;
+    let vocesNavegador = [];
+    let utterance = null;
+    let reproduciendo = false;
+    let pausado = false;
+    let kokoroTTS = null; // Instancia de Kokoro (lazy load)
+    let kokoroCargando = false;
+
+    // Audio y visualizador
+    let audioCtx = null, analyser = null, sourceNode = null, mediaStream = null;
+    let visualizerRAF = null;
+
+    // Grabadora
+    let mediaRecorder = null, chunks = [], grabando = false;
+
+    // VAD
+    let vadInstance = null;
+    let vadActivo = false;
+
+    // Almacenamiento
+    const store = localforage.createInstance({ name: "adri_docs_v4" });
+    let searchIndex = null;
+    let documentosCargados = false;
+
+    // Elementos DOM
+    const textoArea = document.getElementById('texto');
+    const textoFS = document.getElementById('textoFS');
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnPause = document.getElementById('btnPause');
+    const btnStop = document.getElementById('btnStop');
+    const btnGrabar = document.getElementById('btnGrabar');
+    const statusDiv = document.getElementById('status');
+    const velSlider = document.getElementById('velocidad');
+    const velLabel = document.getElementById('velLabel');
+    const motorSelect = document.getElementById('motorVoz');
+    const vozSelect = document.getElementById('vozSelect');
+
+    // ═══════════════════════════════════════════════════════════
+    // 2. VISUALIZADOR DE AUDIO REAL (Web Audio API)
+    // ═══════════════════════════════════════════════════════════
+    function iniciarAnalizador(stream) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        sourceNode = audioCtx.createMediaStreamSource(stream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256; // Resolución media para barras
+        analyser.smoothingTimeConstant = 0.75; // Suavizado para que no salten tan brusco
+        sourceNode.connect(analyser);
+        // No conectar a destination para evitar feedback (eco)
+        dibujarVisualizador();
+    }
+
+    function dibujarVisualizador() {
+        if (!analyser) return;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
+
+        const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+        const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+        ctx.clearRect(0, 0, w, h);
+
+        const barWidth = (w / bufferLength) * 2.5;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+            const barHeight = (dataArray[i] / 255) * h;
+            // Degradado según intensidad
+            const intensity = dataArray[i] / 255;
+            const r = Math.round(56 + intensity * 199); // de azul a rojo
+            const g = Math.round(189 - intensity * 100);
+            const b = Math.round(248 - intensity * 150);
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.fillRect(x, h - barHeight, barWidth, barHeight);
+            x += barWidth + 2;
+        }
+        visualizerRAF = requestAnimationFrame(dibujarVisualizador);
+    }
+
+    function detenerVisualizador() {
+        if (visualizerRAF) cancelAnimationFrame(visualizerRAF);
+        visualizerRAF = null;
+        if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
+        if (analyser) { analyser.disconnect(); analyser = null; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 3. VAD (Detección de Voz) Y GRABACIÓN
+    // ═══════════════════════════════════════════════════════════
+    async function toggleGrabacion() {
+        if (grabando) {
+            detenerGrabacion();
+            return;
+        }
+        try {
+            if (!mediaStream) {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+            iniciarAnalizador(mediaStream); // Visualizador real desde el micrófono
+
+            // Iniciar MediaRecorder
+            const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+            mediaRecorder = new MediaRecorder(mediaStream, { mimeType: mime });
+            chunks = [];
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: mime });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `adri_grabacion_${Date.now()}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+                mostrarStatus("✅ Grabación descargada");
+            };
+            mediaRecorder.start(100);
+            grabando = true;
+            btnGrabar.classList.add('recording');
+            btnGrabar.textContent = '⏹️ Detener Grabación';
+            mostrarStatus("🎙️ Grabando... (habla claro)");
+
+            // Opcional: Iniciar VAD para detectar silencios y pausar visualizador
+            if (createVAD && !vadInstance) {
+                try {
+                    vadInstance = await createVAD({
+                        onSpeechStart: () => { /* console.log("Voz detectada"); */ },
+                        onSpeechEnd: () => { /* console.log("Silencio"); */ },
+                        onFrameProcessed: (prob) => { /* Podría modular el visualizador */ }
+                    }, { noiseSuppression: true });
+                    vadInstance.start();
+                    vadActivo = true;
+                } catch(e) { console.warn("VAD falló:", e); }
+            }
+        } catch (err) {
+            console.error(err);
+            mostrarStatus("❌ No se pudo acceder al micrófono: " + err.message);
+        }
+    }
+
+    function detenerGrabacion() {
+        if (mediaRecorder && grabando) {
+            mediaRecorder.stop();
+            grabando = false;
+            btnGrabar.classList.remove('recording');
+            btnGrabar.textContent = '🎙️ Grabar';
+            if (vadInstance && vadActivo) { vadInstance.pause(); vadActivo = false; }
+            detenerVisualizador();
+            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 4. TTS: NAVEGADOR (Web Speech) Y KOKORO (IA)
+    // ═══════════════════════════════════════════════════════════
+    function cargarVocesNavegador() {
+        vocesNavegador = synth.getVoices();
+        actualizarSelectVoces();
+    }
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = cargarVocesNavegador;
+    }
+    setTimeout(cargarVocesNavegador, 100);
+
+    function actualizarSelectVoces() {
+        vozSelect.innerHTML = '';
+        if (motorSelect.value === 'browser') {
+            vocesNavegador.forEach((v, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${v.name.substring(0,20)} (${v.lang})`;
+                if (v.lang.startsWith('es')) opt.selected = true;
+                vozSelect.appendChild(opt);
+            });
+        } else {
+            // Voces Kokoro (se cargan bajo demanda)
+            const vocesKokoro = ['af_heart', 'af_bella', 'am_adam', 'bm_george', 'ef_dora'];
+            vocesKokoro.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v; opt.textContent = v;
+                if (v === 'ef_dora') opt.selected = true; // Voz femenina en español
+                vozSelect.appendChild(opt);
+            });
+        }
+    }
+
+    async function cambiarMotor(motor) {
+        if (motor === 'kokoro') {
+            if (kokoroCargando) { mostrarStatus("⏳ Kokoro ya se está cargando..."); return; }
+            if (!kokoroTTS) {
+                kokoroCargando = true;
+                mostrarStatus("⏳ Cargando modelo Kokoro IA (puede tardar 1-2 min la primera vez)...");
+                try {
+                    const module = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
+                    KokoroTTS = module.KokoroTTS;
+                    kokoroTTS = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "q8", device: "wasm" });
+                    mostrarStatus("✅ Kokoro IA listo. Voces de alta calidad.");
+                } catch(e) {
+                    console.error(e);
+                    mostrarStatus("❌ Falló la carga de Kokoro. Usa el motor 'Navegador'.");
+                    motorSelect.value = 'browser';
+                } finally { kokoroCargando = false; }
+            }
+        }
+        actualizarSelectVoces();
+    }
+
+    function seleccionarVoz(val) { /* Solo actualiza la selección */ }
+
+    async function reproducir() {
+        detener(); // Limpiar estado previo
+        const texto = textoArea.value.trim();
+        if (!texto) { mostrarStatus("⚠️ Escribe o pega un texto primero."); return; }
+
+        if (motorSelect.value === 'browser') {
+            utterance = new SpeechSynthesisUtterance(texto);
+            const idx = parseInt(vozSelect.value);
+            if (vocesNavegador[idx]) utterance.voice = vocesNavegador[idx];
+            utterance.rate = parseFloat(velSlider.value);
+            utterance.onstart = () => { btnPlay.disabled = true; btnPause.disabled = false; btnStop.disabled = false; reproduciendo = true; mostrarStatus("🔊 Leyendo..."); };
+            utterance.onend = () => { resetBotones(); mostrarStatus("✅ Lectura finalizada"); };
+            utterance.onerror = (e) => { resetBotones(); mostrarStatus("❌ Error TTS: " + e.error); };
+            synth.speak(utterance);
+        } else {
+            // Kokoro
+            if (!kokoroTTS) { mostrarStatus("⚠️ Kokoro no está listo. Espera o cambia a 'Navegador'."); return; }
+            try {
+                btnPlay.disabled = true; btnPause.disabled = true; btnStop.disabled = false;
+                mostrarStatus("🎵 Generando audio con IA...");
+                const voz = vozSelect.value || 'ef_dora';
+                const audio = await kokoroTTS.generate(texto, { voice: voz });
+                // Reproducir el WAV generado
+                const blob = new Blob([audio.toWav()], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                const audioEl = new Audio(url);
+                audioEl.playbackRate = parseFloat(velSlider.value);
+                audioEl.onended = () => { resetBotones(); mostrarStatus("✅ Lectura finalizada"); URL.revokeObjectURL(url); };
+                audioEl.onerror = () => { resetBotones(); mostrarStatus("❌ Error al reproducir audio de Kokoro"); };
+                audioEl.play();
+                // Conectar al visualizador (opcional)
+                if (audioCtx) {
+                    const src = audioCtx.createMediaElementSource(audioEl);
+                    src.connect(analyser || audioCtx.destination);
+                }
+            } catch(e) {
+                console.error(e);
+                resetBotones();
+                mostrarStatus("❌ Error generando voz con Kokoro: " + e.message);
+            }
+        }
+    }
+
+    function pausar() {
+        if (motorSelect.value === 'browser' && synth.speaking && !synth.paused) {
+            synth.pause(); pausado = true; btnPause.textContent = '▶️ Reanudar';
+            mostrarStatus("⏸️ Pausado");
+        }
+    }
+
+    function detener() {
+        if (motorSelect.value === 'browser') synth.cancel();
+        // Para Kokoro, no hay un objeto global fácil de detener, pero se puede recargar
+        reproduciendo = false; pausado = false;
+        resetBotones();
+        mostrarStatus("");
+    }
+
+    function resetBotones() {
+        btnPlay.disabled = false; btnPause.disabled = true; btnStop.disabled = true;
+        btnPause.textContent = '⏸️'; reproduciendo = false; pausado = false;
+    }
+
+    function cambiarVelocidad(val) {
+        velLabel.textContent = parseFloat(val).toFixed(1) + 'x';
+        if (utterance && reproduciendo && motorSelect.value === 'browser') {
+            // Cambiar velocidad en tiempo real (reinicia desde el inicio para simplificar)
+            // Una implementación completa requeriría guardar el índice de la palabra.
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 5. OCR (Tesseract.js v5)
+    // ═══════════════════════════════════════════════════════════
+    async function procesarOCR(input) {
+        const file = input.files[0];
+        if (!file) return;
+        mostrarStatus("📷 Procesando imagen con OCR (esto puede tardar)...");
+        try {
+            // Sintaxis correcta v5: createWorker(lang, oem, options)
+            const worker = await Tesseract.createWorker('spa', 1, {
+                logger: m => { if (m.status === 'recognizing text') mostrarStatus(`📷 OCR: ${Math.round(m.progress * 100)}%`); }
+            });
+            const { data: { text } } = await worker.recognize(file);
+            await worker.terminate();
+
+            if (text.trim()) {
+                textoArea.value += (textoArea.value ? '\n' : '') + text.trim();
+                mostrarStatus("✅ Texto extraído y agregado al área.");
+            } else {
+                mostrarStatus("⚠️ No se detectó texto legible en la imagen.");
+            }
+        } catch (err) {
+            console.error(err);
+            mostrarStatus("❌ Error en OCR: " + err.message);
+        }
+        input.value = '';
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 6. ALMACENAMIENTO Y BÚSQUEDA (FlexSearch + IndexedDB)
+    // ═══════════════════════════════════════════════════════════
+    async function inicializarBusqueda() {
+        if (documentosCargados) return;
+        try {
+            // Crear índice persistente en IndexedDB
+            searchIndex = new FlexSearch.Index({ db: new FlexSearch.IndexedDB("adri_search_store") });
+            await searchIndex.db;
+            // Cargar documentos existentes para reindexar (opcional, pero FlexSearch ya los tiene si se usó add)
+            documentosCargados = true;
+            console.log("Índice de búsqueda listo.");
+        } catch(e) { console.warn("Error inicializando búsqueda:", e); }
+    }
+
+    async function guardarDocumento() {
+        const texto = textoArea.value.trim();
+        if (!texto) { mostrarStatus("⚠️ No hay texto para guardar."); return; }
+        const titulo = prompt("Ponle un título al documento (ej. Libro de Mormón - Daniel 1):", "Documento sin título");
+        if (!titulo) return;
+
+        await inicializarBusqueda();
+        const id = Date.now().toString();
+        // Guardar texto completo en localForage
+        await store.setItem(id, { titulo, texto, fecha: new Date().toISOString() });
+        // Indexar para búsqueda (el ID es la clave)
+        if (searchIndex) {
+            searchIndex.add(id, titulo + " " + texto);
+            await searchIndex.commit();
+        }
+        mostrarStatus(`✅ Guardado: "${titulo}"`);
+    }
+
+    async function buscar(query) {
+        const resultsDiv = document.getElementById('searchResults');
+        if (!query || query.length < 2) { resultsDiv.classList.remove('active'); return; }
+        await inicializarBusqueda();
+        if (!searchIndex) return;
+
+        const resultados = await searchIndex.search(query);
+        if (!resultados.length) { resultsDiv.innerHTML = '<div>No se encontraron documentos.</div>'; resultsDiv.classList.add('active'); return; }
+
+        resultsDiv.innerHTML = '';
+        for (const id of resultados.slice(0, 5)) {
+            const doc = await store.getItem(id);
+            if (doc) {
+                const div = document.createElement('div');
+                div.textContent = `📄 ${doc.titulo}`;
+                div.onclick = () => {
+                    textoArea.value = doc.texto;
+                    resultsDiv.classList.remove('active');
+                    mostrarStatus(`📂 Cargado: ${doc.titulo}`);
+                };
+                resultsDiv.appendChild(div);
+            }
+        }
+        resultsDiv.classList.add('active');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 7. PANTALLA COMPLETA Y UTILIDADES
+    // ═══════════════════════════════════════════════════════════
+    function toggleFullscreen() {
+        const overlay = document.getElementById('fsOverlay');
+        overlay.classList.toggle('active');
+        if (overlay.classList.contains('active')) {
+            textoFS.value = textoArea.value;
+        }
+    }
+
+    function mostrarStatus(msg) {
+        statusDiv.textContent = msg;
+        statusDiv.classList.toggle('active', !!msg);
+        if (msg) setTimeout(() => { statusDiv.classList.remove('active'); }, 5000);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // 8. INICIALIZACIÓN FINAL
+    // ═══════════════════════════════════════════════════════════
+    window.addEventListener('load', () => {
+        cargarVocesNavegador();
+        // Ajustar canvas al tamaño real
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+    });
+</script>
+</body>
+</html>
