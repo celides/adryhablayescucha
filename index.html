@@ -1,11 +1,327 @@
-Jesucristo brinda gozo
-Doctrina y Convenios 101:36
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lector de Texto · Stack Labs</title>
+<style>
+:root {
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --bg: #F3F4F6;
+  --card: #FFFFFF;
+  --text: #1F2937;
+  --text-light: #6B7280;
+  --border: #E5E7EB;
+}
 
-Tu Padre Celestial está lleno de gozo. Él quiere que tú, Su hijo, tengas tanto gozo como sea posible. Por eso preparó el plan de felicidad. Envió a Su Hijo, Jesucristo, para que fuera tu Salvador y enseñara Su Evangelio. La palabra Evangelio significa “buenas nuevas” y las buenas nuevas son que, gracias a Jesucristo, puedes tener felicidad en esta vida y plenitud de gozo por la eternidad.
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-Verdades eternas
-Tu propósito es tener felicidad y gozo. Ese es el propósito de tu vida. Es el propósito del plan de felicidad del Padre Celestial. Eso no significa que nunca estarás triste ni pasarás por momentos difíciles. Pero sí significa que el Salvador puede ayudarte a atravesar los momentos difíciles y a encontrar gozo.
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
 
-El gozo no proviene de tus circunstancias; proviene de seguir a Jesucristo. Puede que tengas un mal día, una mala semana o un mal año. Pero el gozo no es la ausencia de tristeza en tu vida; es la presencia de Cristo en ella.
+.container {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 700px;
+  padding: 32px;
+}
 
-El gozo del Salvador es mayor y más duradero que cualquier otra cosa. Satanás te tentará a buscar diversión y satisfacción de maneras egoístas o en los placeres mundanos. Cualquier cosa que sea contraria a Jesucristo y Sus mandamientos no puede brindarte gozo y felicidad verdaderos y duraderos. Recuerda que las cosas de este mundo son temporales. El Evangelio de Jesucristo ofrece gozo y felicidad que son profundos, santos y eternos.
+h1 {
+  font-size: 24px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary);
+}
+
+.subtitle {
+  color: var(--text-light);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+textarea {
+  width: 100%;
+  height: 200px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.char-count {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 20px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: #FEE2E2; color: #DC2626; }
+.btn-danger:hover { background: #FECACA; }
+
+.settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+select, input[type="range"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 14px;
+}
+
+.status {
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+  display: none;
+}
+
+.status.speaking {
+  display: block;
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.status.paused {
+  display: block;
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+@media (max-width: 600px) {
+  .container { padding: 20px; }
+  .settings { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎙️ Lector de Texto</h1>
+  <p class="subtitle">Pega tu texto, ajusta la velocidad y escúchalo.</p>
+
+  <textarea id="textInput" placeholder="Pega o escribe tu texto aquí... (Ej: Copia un artículo, un correo o un documento y pégalo aquí para que te lo lea en voz alta)."></textarea>
+  <div class="char-count"><span id="charCount">0</span> caracteres</div>
+
+  <div class="controls">
+    <button class="btn btn-primary" onclick="speakText()">▶️ Leer</button>
+    <button class="btn btn-secondary" onclick="pauseText()">⏸️ Pausar</button>
+    <button class="btn btn-danger" onclick="stopText()">⏹️ Detener</button>
+    <button class="btn btn-secondary" onclick="clearText()">🗑️ Limpiar</button>
+  </div>
+
+  <div class="settings">
+    <div class="setting-group">
+      <label>🗣️ Voz</label>
+      <select id="voiceSelect"></select>
+    </div>
+    <div class="setting-group">
+      <label>⚡ Velocidad: <span id="speedValue">1.0x</span></label>
+      <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed(this.value)">
+    </div>
+  </div>
+
+  <div id="status" class="status"></div>
+</div>
+
+<script>
+const textInput = document.getElementById('textInput');
+const charCount = document.getElementById('charCount');
+const voiceSelect = document.getElementById('voiceSelect');
+const speedRange = document.getElementById('speedRange');
+const speedValue = document.getElementById('speedValue');
+const statusDiv = document.getElementById('status');
+
+const synth = window.speechSynthesis;
+let voices = [];
+
+// 1. Cargar voces disponibles en el navegador
+function populateVoices() {
+  voices = synth.getVoices();
+  voiceSelect.innerHTML = '';
+  
+  // Filtrar y ordenar: primero las voces en español
+  const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
+  const otherVoices = voices.filter(v => !v.lang.startsWith('es'));
+  const sortedVoices = [...spanishVoices, ...otherVoices];
+
+  sortedVoices.forEach((voice, index) => {
+    const option = document.createElement('option');
+    option.textContent = `${voice.name} (${voice.lang})`;
+    option.value = index; // Guardamos el índice del array original
+    option.setAttribute('data-name', voice.name);
+    
+    // Seleccionar por defecto una voz en español de México o España
+    if (voice.lang === 'es-MX' || voice.lang === 'es-ES') {
+      option.selected = true;
+    }
+    
+    voiceSelect.appendChild(option);
+  });
+}
+
+// Algunos navegadores cargan las voces de forma asíncrona
+populateVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoices;
+}
+
+// 2. Contador de caracteres
+textInput.addEventListener('input', () => {
+  charCount.textContent = textInput.value.length;
+});
+
+// 3. Actualizar velocidad
+function updateSpeed(val) {
+  speedValue.textContent = val + 'x';
+}
+
+// 4. Función para LEER
+function speakText() {
+  if (synth.speaking && synth.paused) {
+    synth.resume();
+    showStatus('Reanudando lectura...', 'speaking');
+    return;
+  }
+
+  if (synth.speaking) {
+    synth.cancel(); // Si ya está hablando, reiniciar
+  }
+
+  const text = textInput.value.trim();
+  if (!text) {
+    showStatus('⚠️ Por favor, escribe o pega algún texto primero.', 'paused');
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
+  const selectedVoice = voices.find(v => v.name === selectedOption);
+  
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+  
+  utterance.rate = parseFloat(speedRange.value);
+  utterance.pitch = 1;
+
+  utterance.onstart = () => showStatus('🔊 Leyendo texto...', 'speaking');
+  utterance.onend = () => showStatus('✅ Lectura finalizada.', '');
+  utterance.onerror = (e) => showStatus('❌ Error al leer: ' + e.error, 'paused');
+
+  synth.speak(utterance);
+}
+
+// 5. Función para PAUSAR
+function pauseText() {
+  if (synth.speaking && !synth.paused) {
+    synth.pause();
+    showStatus('⏸️ Lectura pausada.', 'paused');
+  }
+}
+
+// 6. Función para DETENER
+function stopText() {
+  synth.cancel();
+  showStatus('⏹️ Lectura detenida.', '');
+}
+
+// 7. Función para LIMPIAR
+function clearText() {
+  stopText();
+  textInput.value = '';
+  charCount.textContent = '0';
+  textInput.focus();
+}
+
+// 8. Mostrar estado
+function showStatus(message, className) {
+  statusDiv.textContent = message;
+  statusDiv.className = 'status ' + className;
+  
+  if (!className) {
+    setTimeout(() => {
+      statusDiv.style.display = 'none';
+    }, 3000);
+  }
+}
+
+// Atajo de teclado: Ctrl + Enter para leer
+textInput.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    speakText();
+  }
+});
+</script>
+
+</body>
+</html>
