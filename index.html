@@ -3,325 +3,403 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lector de Texto · Stack Labs</title>
+<title>Adri habla y escucha · Stack Labs</title>
+<script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 <style>
-:root {
-  --primary: #4F46E5;
-  --primary-hover: #4338CA;
-  --bg: #F3F4F6;
-  --card: #FFFFFF;
-  --text: #1F2937;
-  --text-light: #6B7280;
-  --border: #E5E7EB;
-}
+/* ═══ 10 SKINS (5 Masculinos, 5 Femeninos) ═══ */
+:root { --p: #2563EB; --s: #1E40AF; --bg: #F8FAFC; --card: #FFFFFF; --txt: #0F172A; --txtL: #64748B; --brd: #E2E8F0; --hl: #FEF08A; }
+[data-skin="m1"] { --p: #2563EB; --s: #1E40AF; --bg: #F8FAFC; --card: #FFFFFF; --txt: #0F172A; } /* Azul Ejecutivo */
+[data-skin="m2"] { --p: #059669; --s: #047857; --bg: #F0FDF4; --card: #FFFFFF; --txt: #064E3B; } /* Verde Bosque */
+[data-skin="m3"] { --p: #475569; --s: #334155; --bg: #F8FAFC; --card: #FFFFFF; --txt: #0F172A; } /* Pizarra Profesional */
+[data-skin="m4"] { --p: #7C3AED; --s: #6D28D9; --bg: #FAF5FF; --card: #FFFFFF; --txt: #2E1065; } /* Midnight Tech */
+[data-skin="m5"] { --p: #B45309; --s: #92400E; --bg: #FFFBEB; --card: #FFFFFF; --txt: #451A03; } /* Clásico Corporativo */
+[data-skin="f1"] { --p: #DB2777; --s: #BE185D; --bg: #FDF2F8; --card: #FFFFFF; --txt: #831843; } /* Rose Quartz */
+[data-skin="f2"] { --p: #9333EA; --s: #7E22CE; --bg: #FAF5FF; --card: #FFFFFF; --txt: #3B0764; } /* Lavender Dream */
+[data-skin="f3"] { --p: #EA580C; --s: #C2410C; --bg: #FFF7ED; --card: #FFFFFF; --txt: #431407; } /* Peach Blossom */
+[data-skin="f4"] { --p: #0D9488; --s: #0F766E; --bg: #F0FDFA; --card: #FFFFFF; --txt: #134E4A; } /* Mint Fresh */
+[data-skin="f5"] { --p: #CA8A04; --s: #A16207; --bg: #FEFCE8; --card: #FFFFFF; --txt: #422006; } /* Golden Hour */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); min-height: 100vh; padding: 20px; transition: all 0.3s ease; }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
+.container { max-width: 800px; margin: 0 auto; }
+
+/* Header */
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.logo { font-size: 24px; font-weight: 800; color: var(--p); display: flex; align-items: center; gap: 8px; }
+.skin-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--brd); background: var(--card); cursor: pointer; font-size: 13px; font-weight: 600; }
+
+/* Controls */
+.controls { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; transition: all 0.2s; }
+.btn-p { background: var(--p); color: white; }
+.btn-p:hover { background: var(--s); }
+.btn-s { background: var(--bg); color: var(--txt); border: 1px solid var(--brd); }
+.btn-s:hover { background: var(--brd); }
+.btn-icon { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 50%; font-size: 18px; }
+.btn-mic.recording { background: #EF4444; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } }
+
+.settings { display: flex; gap: 16px; flex: 1; flex-wrap: wrap; align-items: center; }
+.setting-group { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+.setting-group label { font-size: 12px; font-weight: 600; color: var(--txtL); }
+select, input[type="range"] { padding: 8px; border: 1px solid var(--brd); border-radius: 6px; background: var(--bg); color: var(--txt); font-size: 13px; width: 100%; }
+
+/* Text Area & Highlighting */
+.text-wrapper { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: relative; min-height: 300px; }
+#textDisplay { 
+  font-size: 18px; line-height: 1.8; white-space: pre-wrap; outline: none; color: var(--txtL); 
 }
+#textDisplay:focus { color: var(--txt); }
+#textDisplay .sentence { transition: all 0.2s; border-radius: 4px; padding: 2px 0; }
+#textDisplay .sentence.active { background-color: var(--hl); color: var(--txt); font-weight: 500; box-shadow: 0 0 0 2px var(--p); }
+#textDisplay .sentence.dimmed { opacity: 0.4; }
 
-.container {
-  background: var(--card);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-  width: 100%;
-  max-width: 700px;
-  padding: 32px;
-}
+.placeholder { color: var(--txtL); font-style: italic; }
 
-h1 {
-  font-size: 24px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--primary);
-}
+/* Status & OCR */
+.status-bar { margin-top: 12px; padding: 10px; border-radius: 8px; font-size: 13px; text-align: center; font-weight: 600; display: none; }
+.status-bar.active { display: block; background: #D1FAE5; color: #065F46; }
+.status-bar.processing { display: block; background: #FEF3C7; color: #92400E; }
 
-.subtitle {
-  color: var(--text-light);
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-textarea {
-  width: 100%;
-  height: 200px;
-  padding: 16px;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  font-size: 16px;
-  line-height: 1.6;
-  resize: vertical;
-  transition: border-color 0.2s;
-  font-family: inherit;
-  margin-bottom: 8px;
-}
-
-textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.char-count {
-  text-align: right;
-  font-size: 12px;
-  color: var(--text-light);
-  margin-bottom: 20px;
-}
-
-.controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.btn {
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-
-.btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-hover); }
-.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: var(--border); }
-.btn-danger { background: #FEE2E2; color: #DC2626; }
-.btn-danger:hover { background: #FECACA; }
-
-.settings {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-
-.setting-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.setting-group label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-light);
-}
-
-select, input[type="range"] {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  font-size: 14px;
-}
-
-.status {
-  margin-top: 16px;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  text-align: center;
-  font-weight: 500;
-  display: none;
-}
-
-.status.speaking {
-  display: block;
-  background: #D1FAE5;
-  color: #065F46;
-}
-
-.status.paused {
-  display: block;
-  background: #FEF3C7;
-  color: #92400E;
-}
+.hidden-input { display: none; }
 
 @media (max-width: 600px) {
-  .container { padding: 20px; }
-  .settings { grid-template-columns: 1fr; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .settings { flex-direction: column; align-items: stretch; }
+  .header { flex-direction: column; align-items: flex-start; }
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>🎙️ Lector de Texto</h1>
-  <p class="subtitle">Pega tu texto, ajusta la velocidad y escúchalo.</p>
+  <div class="header">
+    <div class="logo">🎙️ Adri habla y escucha</div>
+    <button class="skin-btn" onclick="toggleSkinMenu()">🎨 Cambiar Estilo</button>
+  </div>
 
-  <textarea id="textInput" placeholder="Pega o escribe tu texto aquí... (Ej: Copia un artículo, un correo o un documento y pégalo aquí para que te lo lea en voz alta)."></textarea>
-  <div class="char-count"><span id="charCount">0</span> caracteres</div>
+  <!-- Skin Selector (Hidden by default) -->
+  <div id="skinMenu" style="display:none; background:var(--card); padding:16px; border-radius:12px; margin-bottom:20px; border:1px solid var(--brd);">
+    <p style="font-size:13px; font-weight:600; margin-bottom:12px; color:var(--txtL);">ELIGE TU ESTILO:</p>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:8px;">
+      <button class="btn btn-s" onclick="setSkin('m1')">👔 Azul Ejecutivo</button>
+      <button class="btn btn-s" onclick="setSkin('m2')">🌲 Verde Bosque</button>
+      <button class="btn btn-s" onclick="setSkin('m3')">💼 Pizarra Pro</button>
+      <button class="btn btn-s" onclick="setSkin('m4')">🌌 Midnight Tech</button>
+      <button class="btn btn-s" onclick="setSkin('m5')">📜 Clásico</button>
+      <button class="btn btn-s" onclick="setSkin('f1')">🌸 Rose Quartz</button>
+      <button class="btn btn-s" onclick="setSkin('f2')">💜 Lavender</button>
+      <button class="btn btn-s" onclick="setSkin('f3')">🍑 Peach</button>
+      <button class="btn btn-s" onclick="setSkin('f4')">🌿 Mint Fresh</button>
+      <button class="btn btn-s" onclick="setSkin('f5')">☀️ Golden Hour</button>
+    </div>
+  </div>
 
   <div class="controls">
-    <button class="btn btn-primary" onclick="speakText()">▶️ Leer</button>
-    <button class="btn btn-secondary" onclick="pauseText()">⏸️ Pausar</button>
-    <button class="btn btn-danger" onclick="stopText()">⏹️ Detener</button>
-    <button class="btn btn-secondary" onclick="clearText()">🗑️ Limpiar</button>
+    <button class="btn btn-icon btn-p" onclick="speak()" title="Leer">▶️</button>
+    <button class="btn btn-icon btn-s" onclick="pause()" title="Pausar">⏸️</button>
+    <button class="btn btn-icon btn-s" onclick="stop()" title="Detener">⏹️</button>
+    <button class="btn btn-icon btn-s" id="micBtn" onclick="toggleMic()" title="Dictar">🎙️</button>
+    <button class="btn btn-s" onclick="document.getElementById('cameraInput').click()" title="Escanear texto (OCR)">📷 Cámara / Imagen</button>
+    <input type="file" id="cameraInput" class="hidden-input" accept="image/*" capture="environment" onchange="processOCR(this)">
+    <button class="btn btn-s" onclick="clearText()" title="Limpiar">🗑️</button>
+
+    <div class="settings">
+      <div class="setting-group">
+        <label>🗣️ Voz</label>
+        <select id="voiceSelect"></select>
+      </div>
+      <div class="setting-group">
+        <label>⚡ Velocidad: <span id="speedVal">1.0x</span></label>
+        <input type="range" id="speedRange" min="0.5" max="2.5" step="0.1" value="1" oninput="changeSpeed(this.value)">
+      </div>
+   0</div>
   </div>
 
-  <div class="settings">
-    <div class="setting-group">
-      <label>🗣️ Voz</label>
-      <select id="voiceSelect"></select>
-    </div>
-    <div class="setting-group">
-      <label>⚡ Velocidad: <span id="speedValue">1.0x</span></label>
-      <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed(this.value)">
-    </div>
+  <div class="text-wrapper">
+    <div id="textDisplay" contenteditable="true" placeholder="Pega tu texto aquí, usa el micrófono o escanea una imagen..."></div>
   </div>
 
-  <div id="status" class="status"></div>
+  <div id="statusBar" class="status-bar"></div>
 </div>
 
 <script>
-const textInput = document.getElementById('textInput');
-const charCount = document.getElementById('charCount');
-const voiceSelect = document.getElementById('voiceSelect');
-const speedRange = document.getElementById('speedRange');
-const speedValue = document.getElementById('speedValue');
-const statusDiv = document.getElementById('status');
-
+// ═══ ESTADO GLOBAL ═══
 const synth = window.speechSynthesis;
 let voices = [];
+let currentUtterance = null;
+let isSpeaking = false;
+let currentCharIndex = 0;
+let sentences = [];
+let recognition = null;
 
-// 1. Cargar voces disponibles en el navegador
+// ═══ INICIALIZACIÓN ═══
+window.onload = () => {
+  populateVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+  
+  // Configurar reconocimiento de voz
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-MX';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (finalTranscript) {
+        const display = document.getElementById('textDisplay');
+        display.innerText += finalTranscript;
+        prepareTextForHighlighting();
+      }
+    };
+    recognition.onerror = (e) => {
+      showStatus('Error de micrófono: ' + e.error, 'processing');
+      document.getElementById('micBtn').classList.remove('recording');
+    };
+    recognition.onend = () => {
+      document.getElementById('micBtn').classList.remove('recording');
+    };
+  }
+};
+
+// ═══ VOCES CON DETECCIÓN DE GÉNERO HEURÍSTICA ═══
 function populateVoices() {
   voices = synth.getVoices();
-  voiceSelect.innerHTML = '';
+  const select = document.getElementById('voiceSelect');
+  select.innerHTML = '';
   
-  // Filtrar y ordenar: primero las voces en español
-  const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
-  const otherVoices = voices.filter(v => !v.lang.startsWith('es'));
-  const sortedVoices = [...spanishVoices, ...otherVoices];
+  // Heurística simple para detectar género por nombre de voz
+  const femaleKeywords = ['female', 'woman', 'samantha', 'zira', 'helena', 'paulina', 'sabina', 'monica', 'victoria', 'google español'];
+  const maleKeywords = ['male', 'man', 'pablo', 'jorge', 'david', 'raul', 'diego', 'carlos', 'microsoft pablo'];
 
-  sortedVoices.forEach((voice, index) => {
+  voices.forEach((voice, index) => {
+    const nameLower = voice.name.toLowerCase();
+    let genderIcon = '🎙️';
+    if (femaleKeywords.some(k => nameLower.includes(k))) genderIcon = '🚺';
+    else if (maleKeywords.some(k => nameLower.includes(k))) genderIcon = '🚹';
+
     const option = document.createElement('option');
-    option.textContent = `${voice.name} (${voice.lang})`;
-    option.value = index; // Guardamos el índice del array original
-    option.setAttribute('data-name', voice.name);
-    
-    // Seleccionar por defecto una voz en español de México o España
-    if (voice.lang === 'es-MX' || voice.lang === 'es-ES') {
-      option.selected = true;
-    }
-    
-    voiceSelect.appendChild(option);
+    option.value = index;
+    option.textContent = `${genderIcon} ${voice.name} (${voice.lang})`;
+    if (voice.lang.includes('es')) option.selected = true;
+    select.appendChild(option);
   });
 }
 
-// Algunos navegadores cargan las voces de forma asíncrona
-populateVoices();
-if (speechSynthesis.onvoiceschanged !== undefined) {
-  speechSynthesis.onvoiceschanged = populateVoices;
+// ═══ PROCESAMIENTO DE TEXTO PARA RESALTADO ═══
+function prepareTextForHighlighting() {
+  const rawText = document.getElementById('textDisplay').innerText;
+  if (!rawText.trim()) {
+    document.getElementById('textDisplay').innerHTML = '<span class="placeholder">Pega tu texto aquí, usa el micrófono o escanea una imagen...</span>';
+    sentences = [];
+    return;
+  }
+  
+  // Dividir en oraciones (por punto, signo de interrogación o salto de línea)
+  sentences = rawText.match(/[^.!?]+[.!?]+[\s]?|[^.!?]+$/g) || [rawText];
+  
+  const html = sentences.map((s, i) => `<span class="sentence" data-index="${i}">${s}</span>`).join('');
+  document.getElementById('textDisplay').innerHTML = html;
 }
 
-// 2. Contador de caracteres
-textInput.addEventListener('input', () => {
-  charCount.textContent = textInput.value.length;
-});
+document.getElementById('textDisplay').addEventListener('input', prepareTextForHighlighting);
 
-// 3. Actualizar velocidad
-function updateSpeed(val) {
-  speedValue.textContent = val + 'x';
-}
-
-// 4. Función para LEER
-function speakText() {
-  if (synth.speaking && synth.paused) {
+// ═══ LECTURA CON RESALTADO EN TIEMPO REAL ═══
+function speak() {
+  if (synth.paused) {
     synth.resume();
-    showStatus('Reanudando lectura...', 'speaking');
+    isSpeaking = true;
+    showStatus('▶️ Reanudando...', 'active');
     return;
   }
 
-  if (synth.speaking) {
-    synth.cancel(); // Si ya está hablando, reiniciar
-  }
-
-  const text = textInput.value.trim();
-  if (!text) {
-    showStatus('⚠️ Por favor, escribe o pega algún texto primero.', 'paused');
-    return;
-  }
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
-  const selectedVoice = voices.find(v => v.name === selectedOption);
+  stop(); // Limpiar anterior
   
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-  }
+  const text = document.getElementById('textDisplay').innerText;
+  if (!text.trim()) return;
+
+  // Si no hemos procesado las oraciones, hacerlo ahora
+  if (sentences.length === 0) prepareTextForHighlighting();
+
+  currentUtterance = new SpeechSynthesisUtterance(text);
+  const selectedVoice = voices[document.getElementById('voiceSelect').value];
+  if (selectedVoice) currentUtterance.voice = selectedVoice;
   
-  utterance.rate = parseFloat(speedRange.value);
-  utterance.pitch = 1;
+  currentUtterance.rate = parseFloat(document.getElementById('speedRange').value);
+  
+  // Magia del resaltado: onboundary se dispara en cada palabra/frase
+  currentUtterance.onboundary = (event) => {
+    if (event.name === 'word' || event.name === 'sentence') {
+      currentCharIndex = event.charIndex;
+      highlightCurrentSentence(currentCharIndex);
+    }
+  };
 
-  utterance.onstart = () => showStatus('🔊 Leyendo texto...', 'speaking');
-  utterance.onend = () => showStatus('✅ Lectura finalizada.', '');
-  utterance.onerror = (e) => showStatus('❌ Error al leer: ' + e.error, 'paused');
+  currentUtterance.onend = () => {
+    isSpeaking = false;
+    clearHighlights();
+    showStatus('✅ Lectura finalizada', 'active');
+    setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
+  };
 
-  synth.speak(utterance);
+  synth.speak(currentUtterance);
+  isSpeaking = true;
+  showStatus('🔊 Leyendo...', 'active');
 }
 
-// 5. Función para PAUSAR
-function pauseText() {
+function highlightCurrentSentence(charIndex) {
+  clearHighlights();
+  let currentLength = 0;
+  
+  for (let i = 0; i < sentences.length; i++) {
+    const sentenceLength = sentences[i].length;
+    if (charIndex >= currentLength && charIndex < (currentLength + sentenceLength)) {
+      // Esta es la oración activa
+      const el = document.querySelector(`.sentence[data-index="${i}"]`);
+      if (el) {
+        el.classList.add('active');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Oscurecer las demás (Focus Mode)
+      document.querySelectorAll('.sentence').forEach((s, idx) => {
+        if (idx !== i) s.classList.add('dimmed');
+      });
+      break;
+    }
+    currentLength += sentenceLength;
+  }
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.sentence').forEach(el => {
+    el.classList.remove('active', 'dimmed');
+  });
+}
+
+// ═══ CONTROL DE VELOCIDAD EN TIEMPO REAL ═══
+function changeSpeed(val) {
+  document.getElementById('speedVal').textContent = val + 'x';
+  
+  // Si está hablando, reiniciar desde la posición actual con la nueva velocidad
+  if (isSpeaking && currentUtterance) {
+    synth.cancel();
+    const text = document.getElementById('textDisplay').innerText;
+    const remainingText = text.substring(currentCharIndex);
+    
+    if (remainingText.trim()) {
+      currentUtterance = new SpeechSynthesisUtterance(remainingText);
+      const selectedVoice = voices[document.getElementById('voiceSelect').value];
+      if (selectedVoice) currentUtterance.voice = selectedVoice;
+      currentUtterance.rate = parseFloat(val);
+      
+      currentUtterance.onboundary = (event) => {
+        highlightCurrentSentence(currentCharIndex + event.charIndex);
+      };
+      
+      synth.speak(currentUtterance);
+    }
+  }
+}
+
+function pause() {
   if (synth.speaking && !synth.paused) {
     synth.pause();
-    showStatus('⏸️ Lectura pausada.', 'paused');
+    isSpeaking = false;
+    showStatus('⏸️ Pausado', 'processing');
   }
 }
 
-// 6. Función para DETENER
-function stopText() {
+function stop() {
   synth.cancel();
-  showStatus('⏹️ Lectura detenida.', '');
+  isSpeaking = false;
+  currentCharIndex = 0;
+  clearHighlights();
+  document.getElementById('statusBar').style.display = 'none';
 }
 
-// 7. Función para LIMPIAR
-function clearText() {
-  stopText();
-  textInput.value = '';
-  charCount.textContent = '0';
-  textInput.focus();
-}
-
-// 8. Mostrar estado
-function showStatus(message, className) {
-  statusDiv.textContent = message;
-  statusDiv.className = 'status ' + className;
+// ═══ MICRÓFONO (DICTADO) ═══
+function toggleMic() {
+  if (!recognition) {
+    alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
+    return;
+  }
   
-  if (!className) {
-    setTimeout(() => {
-      statusDiv.style.display = 'none';
-    }, 3000);
+  const btn = document.getElementById('micBtn');
+  if (btn.classList.contains('recording')) {
+    recognition.stop();
+    btn.classList.remove('recording');
+    showStatus('🎙️ Dictado detenido', 'processing');
+  } else {
+    recognition.start();
+    btn.classList.add('recording');
+    showStatus('🎙️ Escuchando... habla ahora', 'active');
   }
 }
 
-// Atajo de teclado: Ctrl + Enter para leer
-textInput.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key === 'Enter') {
-    speakText();
+// ═══ OCR (CÁMARA / IMAGEN) ═══
+async function processOCR(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  showStatus('📷 Escaneando imagen con IA (esto puede tomar unos segundos)...', 'processing');
+  
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'spa', { 
+      logger: m => { if(m.status === 'recognizing text') showStatus(`📷 Procesando: ${Math.round(m.progress * 100)}%`, 'processing'); }
+    });
+    
+    if (text.trim()) {
+      const display = document.getElementById('textDisplay');
+      // Si está el placeholder, limpiarlo
+      if (display.innerText.includes('Pega tu texto aquí')) display.innerText = '';
+      display.innerText += '\n' + text.trim() + '\n';
+      prepareTextForHighlighting();
+      showStatus('✅ Texto extraído exitosamente', 'active');
+    } else {
+      showStatus('⚠️ No se detectó texto en la imagen', 'processing');
+    }
+  } catch (err) {
+    showStatus('❌ Error al procesar la imagen', 'processing');
+    console.error(err);
   }
-});
-</script>
+  input.value = ''; // Reset para poder subir la misma imagen de nuevo
+}
 
+// ═══ UTILIDADES ═══
+function clearText() {
+  stop();
+  document.getElementById('textDisplay').innerHTML = '<span class="placeholder">Pega tu texto aquí, usa el micrófono o escanea una imagen...</span>';
+  sentences = [];
+}
+
+function toggleSkinMenu() {
+  const menu = document.getElementById('skinMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function setSkin(skinName) {
+  document.documentElement.setAttribute('data-skin', skinName);
+  document.getElementById('skinMenu').style.display = 'none';
+}
+
+function showStatus(msg, type) {
+  const bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.className = 'status-bar ' + type;
+}
+
+// Inicializar texto vacío con placeholder
+prepareTextForHighlighting();
+</script>
 </body>
 </html>
